@@ -416,14 +416,19 @@
 
         let currentDate = new Date();
         const subscriptionData = await response.json();
+		let expiryDate = currentDate
+		let formattedDate = '永不过期'
         const totalAmount = subscriptionData.system_hard_limit_usd;
-        const expiryDate = new Date(subscriptionData.access_until * 1000 + 8 * 60 * 60 * 1000);
-        const formattedDate = `${expiryDate.getFullYear()}-${(expiryDate.getMonth() + 1).toString().padStart(2, '0')}-${expiryDate.getDate().toString().padStart(2, '0')}`;
+		if (subscriptionData.access_until > 0){
+			expiryDate = new Date(subscriptionData.access_until * 1000 + 8 * 60 * 60 * 1000);
+			formattedDate = `${expiryDate.getFullYear()}-${(expiryDate.getMonth() + 1).toString().padStart(2, '0')}-${expiryDate.getDate().toString().padStart(2, '0')}`;
+			console.log(formattedDate);
+		}
 
         const gpt4CheckResponse = await fetch(gpt4Check, { headers });
         const gpt4CheckData = await gpt4CheckResponse.json();
         let GPT4CheckResult = Array.isArray(gpt4CheckData.data) && gpt4CheckData.data.some(item => item.id.includes('gpt-4')) ? '✅' : '❌';
-        let isSubscrible = subscriptionData.plan.id.includes('payg') ? '🟢' : '🔴';
+        let isSubscrible = subscriptionData?.plan?.id.includes('payg') ? '🟢' : '🔴';
 
         if (totalAmount > 20) {
           startDate = subDate;
@@ -436,7 +441,7 @@
         const usageData = await response.json();
         const totalUsage = usageData.total_usage / 100;
         let remaining;
-        if (currentDate > expiryDate) {
+        if (subscriptionData.access_until > 0 & currentDate > expiryDate) {
           remaining = "🔴过期";
         } else {
           remaining = subscriptionData.system_hard_limit_usd - totalUsage;
